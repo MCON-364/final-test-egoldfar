@@ -27,8 +27,7 @@ import java.util.stream.*;
  */
 public class ProductReviewAnalyzer {
 
-    //TODO - uncomment this field and initialize it in the constructor to store categories.
-    //private final List<String> categories;
+    private final List<String> categories;
 
     /**
      * Store the category tags that this analyzer will examine.
@@ -36,7 +35,10 @@ public class ProductReviewAnalyzer {
      * If the input list is null, throw an IllegalArgumentException.
      */
     public ProductReviewAnalyzer(List<String> categories) {
-      //TODO - implement this constructor
+      if (categories == null) {
+          throw new IllegalArgumentException("Category list cannot be null");
+      }
+        this.categories = List.copyOf(categories);
     }
 
     /**
@@ -46,8 +48,9 @@ public class ProductReviewAnalyzer {
      * @return sorted frequency map
      */
     public Map<String, Long> buildCategoryFrequencyMap() {
-        //TODO - implement this method
-        return null;
+        return categories.stream()
+            .sorted()
+            .collect(Collectors.groupingBy(c -> c, TreeMap::new, Collectors.counting()));
     }
 
     /**
@@ -57,8 +60,11 @@ public class ProductReviewAnalyzer {
      * @return list of category names, most reviewed first
      */
     public List<String> getTopNCategories(int n) {
-        //TODO - implement this method
-        return null;
+        return this.buildCategoryFrequencyMap().entrySet().stream()
+            .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder()))
+            .limit(n)
+            .map(Map.Entry::getKey)
+            .toList();
     }
 
     /**
@@ -68,8 +74,11 @@ public class ProductReviewAnalyzer {
      * @return sorted list of matching category names
      */
     public List<String> getCategoriesStartingWith(char prefix) {
-        //TODO - implement this method
-        return null;
+        return categories.stream()
+        .distinct()
+        .filter(c -> !c.isEmpty() && c.charAt(0) == prefix)
+        .sorted()
+        .toList();
     }
 
     /**
@@ -80,7 +89,17 @@ public class ProductReviewAnalyzer {
      * @return Optional containing the most reviewed category in range, or empty if none
      */
     public Optional<String> getMostReviewedInRange(String from, String to) {
-        //TODO - implement this method
-        return Optional.empty();
+        var max = this.buildCategoryFrequencyMap().entrySet().stream()
+        .filter(e -> {
+            String c = e.getKey();
+            return (c.compareToIgnoreCase(from) >= 0 && c.compareToIgnoreCase(to) <= 0);
+        })
+        .max(Map.Entry.comparingByValue());
+        try {
+            return Optional.ofNullable(max.get().getKey());
+        } catch (NoSuchElementException e) {
+            return Optional.empty();
+        }
+
     }
 }
