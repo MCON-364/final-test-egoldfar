@@ -28,10 +28,10 @@ import java.util.stream.Collectors;
  */
 public class ConcurrentAuctionTracker {
 
-    //TODO - Initialize thread-safe sorted Set implementation to store bids in descending order by amount.
-    //Uncomment line below and choose the appropriate concurrent collection to store BidEntry objects sorted by amount.
-    //private final Set<BidEntry> bids;
-    //TODO - Initialize a thread-safe counter to track total bid submissions and call it totalBids.
+    //Initialize thread-safe sorted Set implementation to store bids in descending order by amount.
+    private final Set<BidEntry> bidSet = new ConcurrentSkipListSet<>();
+    //Initialize a thread-safe counter to track total bid submissions and call it totalBids.
+    AtomicInteger totalBids = new AtomicInteger(0);
 
 
     /**
@@ -40,7 +40,8 @@ public class ConcurrentAuctionTracker {
      * @param entry the bid entry to add
      */
     public void submitBid(BidEntry entry) {
-        //TODO - implement this method
+        bidSet.add(entry);
+        totalBids.incrementAndGet();
     }
 
     /**
@@ -50,16 +51,16 @@ public class ConcurrentAuctionTracker {
      * @return immutable top-n list
      */
     public List<BidEntry> getTopN(int n) {
-        //TODO - implement this method
-        return null;
+        return bidSet.stream()
+                .limit(n)
+                .toList();
     }
 
     /**
      * Returns how many times submitBid has been called since creation.
      */
     public int getTotalBids() {
-        //TODO - implement this method
-        return 0;
+        return totalBids.get();
     }
 
     /**
@@ -73,7 +74,18 @@ public class ConcurrentAuctionTracker {
      */
     public void runSimulation(List<String> bidders, int bidsEach)
             throws InterruptedException {
-        //TODO - implement this method
+        ExecutorService executor = Executors.newFixedThreadPool(bidders.size());
+        Random random = new Random();
+        for (String bidder : bidders) {
+            executor.submit(() -> {
+                for (int i = 0; i < bidsEach; i++) {
+                    int amount = random.nextInt(); // Random bid between $1 and $1000
+                    submitBid(new BidEntry(bidder, amount, System.currentTimeMillis()));
+                }
+            });
+        }
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
     }
 }
 

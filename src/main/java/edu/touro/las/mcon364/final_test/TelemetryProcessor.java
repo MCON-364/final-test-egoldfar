@@ -1,6 +1,10 @@
 package edu.touro.las.mcon364.final_test;
 
 import java.util.DoubleSummaryStatistics;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
 
 /**
  * TelemetryProcessor – concurrent sensor-data pipeline
@@ -32,6 +36,10 @@ import java.util.DoubleSummaryStatistics;
 public class TelemetryProcessor {
 
     // ── declare whatever fields you need ─────────────────────────────────────
+    boolean running = false;
+    ExecutorService pool;
+    AtomicInteger totalProcessed = new AtomicInteger(0);
+    ArrayBlockingQueue<Double> queue = new ArrayBlockingQueue<>(1000);
 
     // ── public API ────────────────────────────────────────────────────────────
 
@@ -44,7 +52,22 @@ public class TelemetryProcessor {
      * @throws IllegalArgumentException if event is null
      */
     public void submit(TelemetryEvent event) {
-        //TODO - implement this method
+        if (event == null) {
+            throw new IllegalArgumentException("Event must not be null");
+        }
+        if (!running) {
+            return; // silently discard events submitted before start() is called
+        }
+
+        pool.submit( () -> {
+            try {
+                queue.put(event.metric()); // blocks if the queue is full
+                totalProcessed.incrementAndGet();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // restore interrupt status
+            }
+        });
+
     }
 
     /**
@@ -53,7 +76,11 @@ public class TelemetryProcessor {
      * @throws IllegalArgumentException if workerCount ≤ 0
      */
     public void start(int workerCount) {
-        //TODO - implement this method
+        if (workerCount <= 0) {
+            throw new IllegalArgumentException("Worker count must be greater than 0");
+        }
+        running = true;
+        pool = Executors.newFixedThreadPool(workerCount);
     }
 
     /**
@@ -61,15 +88,18 @@ public class TelemetryProcessor {
      * @throws InterruptedException if the calling thread is interrupted while waiting
      */
     public void stop() throws InterruptedException {
-        //TODO - implement this method
+        if (!running) {
+            return; // if not running, do nothing
+        }
+        pool.shutdown();
+        pool.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES);
     }
 
     /**
      * Return the total number of events that have been fully processed.
      */
     public int getTotalProcessed() {
-        //TODO - implement this method
-        return 0;
+        return totalProcessed.get();
     }
 
     /**
@@ -81,7 +111,9 @@ public class TelemetryProcessor {
      *
      */
     public DoubleSummaryStatistics getStats() {
-        //TODO - implement this method
-        return null;
+        return queue.stream()
+        .collect(DoubleSummaryStatistics::new, 
+            DoubleSummaryStatistics::accept, 
+            DoubleSummaryStatistics::combine);
     }
 }
