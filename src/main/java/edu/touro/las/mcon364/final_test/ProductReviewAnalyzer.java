@@ -64,7 +64,7 @@ public class ProductReviewAnalyzer {
             .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder()))
             .limit(n)
             .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
