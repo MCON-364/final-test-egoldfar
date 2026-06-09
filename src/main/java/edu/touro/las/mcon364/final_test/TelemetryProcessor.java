@@ -39,7 +39,7 @@ public class TelemetryProcessor {
     boolean running = false;
     ExecutorService pool;
     AtomicInteger totalProcessed = new AtomicInteger(0);
-    ArrayBlockingQueue<Double> queue = new ArrayBlockingQueue<>(1000);
+    ArrayBlockingQueue<TelemetryEvent> queue = new ArrayBlockingQueue<>(1000);
 
     // ── public API ────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ public class TelemetryProcessor {
 
         pool.submit( () -> {
             try {
-                queue.put(event.metric()); // blocks if the queue is full
+                queue.put(event); // blocks if the queue is full
                 totalProcessed.incrementAndGet();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // restore interrupt status
@@ -112,6 +112,7 @@ public class TelemetryProcessor {
      */
     public DoubleSummaryStatistics getStats() {
         return queue.stream()
+        .mapToDouble(TelemetryEvent::metric)
         .collect(DoubleSummaryStatistics::new, 
             DoubleSummaryStatistics::accept, 
             DoubleSummaryStatistics::combine);
