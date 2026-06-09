@@ -64,9 +64,6 @@ public class ProductReviewAnalyzer {
     /**
      * Returns all categories whose first letter equals the given prefix letter,
      * in alphabetical order.
-     *
-     * Hint: use a NavigableSet and subSet(from, to) with prefix+1 as the upper bound.
-     *
      * @param prefix the starting letter (e.g., 'e')
      * @return sorted list of matching category names
      */
@@ -77,9 +74,6 @@ public class ProductReviewAnalyzer {
 
     /**
      * Finds the most reviewed category in the alphabetical range [from, to] inclusive.
-     *
-     * Hint: use subMap(from, true, to, true) on the frequency map, then stream its
-     * entries and find the max by value.
      *
      * @param from lower bound category name (inclusive)
      * @param to   upper bound category name (inclusive)
